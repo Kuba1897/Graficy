@@ -1,0 +1,10 @@
+# environment.yml
+
+name: graphs-sandobx-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14
+  - networkx
+  - matplotlib
+  - numpy
