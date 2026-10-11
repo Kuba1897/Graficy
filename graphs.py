@@ -2,6 +2,7 @@
 #                  Main CLI program                       #
 ###########################################################
 import argparse
+import random
 import graphUtils as gu
 import interactive_graphs as ig
 
@@ -9,8 +10,14 @@ display_types = [
     'adj_list', 
     'adj_matrix', 
     'inc_matrix',
-    'graph'
+    'graph',
+    'components',
+    'euler',
+    'hamilton'
 ]
+
+# Adjastable
+k_regular_randomization_cycles = 10
 
 ################################# CLI parser ##########################################
 
@@ -34,8 +41,18 @@ parser.add_argument("--out",
 parser.add_argument("--gen", 
                     "-generate", 
                     nargs=3,
-                    metavar=("{np,nl}", "n", "{l,p}"),
-                    help="Can be used when no --f specified to generate desired graph. Usage: '--gen [np,nl] n [l,p]'")
+                    metavar=("{np,nl,kregular}", "n", "{l,p,k}"),
+                    help="Can be used when no --f specified to generate desired graph. Usage: '--gen [np,nl,kregular] n [l,p, k]'")
+parser.add_argument("--genseq",
+                    "-generateSequence",
+                    nargs=1,
+                    metavar="number_of_nodes",
+                    help="Generates graph based on random sequence with number_of_node numbers. Only usable if --f or --gen is not specified!")
+parser.add_argument("--rand",
+                    "-randomize",
+                    nargs=1,
+                    metavar="number_of_randomizations",
+                    help="Specifies how many randomizations will be done")
 parser.add_argument("--i",
                     "-interactive",
                     action='store_true',
@@ -48,9 +65,11 @@ display_type = args.dp
 input_file = args.f
 output_file = args.out
 generator = args.gen
+generatorsequence = args.genseq
+randomize = args.rand
 interactive_mode = args.i
 
-if interactive_mode:
+if interactive_mode == True:
     ig.run_interactive_program(input_file if input_file != None else None)
 
 ########################################################### CLI execution ########################################################
@@ -68,6 +87,17 @@ elif generator != None:
     elif generator[0] == 'nl':
         edge_num = int(generator[2])
         adjacent_list = gu.generateGraph(node_num=node_num, edge_num=edge_num)
+    elif generator[0] == 'kregular':
+        node_degree = int(generator[2])
+        adjacent_list = gu.generateGraphRegularK(node_num=node_num, node_degree=node_degree, randomization_cycles=k_regular_randomization_cycles)
+elif generatorsequence != None:
+    node_num = int(generatorsequence[0])
+    goodSequence = False
+    while goodSequence != True:
+        sequence = [random.randint(1, node_num - 1) for _ in range(node_num)]
+        if gu.checkIGraphicSequence(sequence=sequence) == True:
+            adjacent_list = gu.graphicalSequenceToAdjacentList(sequence=sequence)
+            goodSequence = True
 else:
     raise ValueError("Input file or generator type required! See help '-h'")
 
@@ -80,6 +110,21 @@ def pretty_print(graph=None, transpose=False, adjacent_list=False):
         graph = [list(col) for col in zip(*graph)]
     for index, row in enumerate(graph):
         print(f"{index + 1}:" if adjacent_list else "", row)
+
+def components_print(components: dict=None):
+    if components == None:
+        raise ValueError("Components as dictionary class required!")
+
+    largest_component = [-1, -1] # [number, nodes_number]
+    for index, item in components.items():
+        if len(item) > largest_component[1]:
+            largest_component[0] = index
+            largest_component[1] = len(item)
+        print(f"{index}) {item}")
+    print(f"Najwieksza skladowa ma numer {largest_component[0]}")
+
+if randomize != None:
+    adjacent_list = gu.randomize_pair(adjacent_list=adjacent_list, randomize_cycles=randomize[0])
 
 #Tyes from display_types
 match display_type:
@@ -104,3 +149,27 @@ match display_type:
         if output_file == None:
             raise ValueError("Output filename required for drawing!")
         gu.graphDisplay(adjacent_list=adjacent_list, filename=output_file[0])
+
+    case 'components':
+        components = gu.graphComponents(adjacent_list=adjacent_list)
+        components_print(components=components)
+        if output_file != None:
+            gu.graphDisplayComponents(adjacent_list=adjacent_list, components=components, filename=output_file[0])
+
+    case 'euler':
+        status, cycle = gu.findEulerCycle(adjacent_list=adjacent_list)
+        if status == True:
+            print(cycle)
+        else:
+            print("Euler cycle not found!")
+        if output_file != None and status == True:
+            gu.graphDisplayHamiltonCycle(adjacent_list=adjacent_list, hamilton_cycle=cycle, filename=output_file[0])
+
+    case 'hamilton':
+        status, cycle = gu.findHamiltonCycle(adjacent_list=adjacent_list)
+        if status == True:
+            print(cycle)
+        else:
+            print("Hamilton cycle not found!")
+        if output_file != None and status == True:
+            gu.graphDisplayHamiltonCycle(adjacent_list=adjacent_list, hamilton_cycle=cycle, filename=output_file[0])
