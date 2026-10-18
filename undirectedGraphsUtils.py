@@ -14,6 +14,8 @@ columns, with one column per edge.
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+import heapq
+import math
 
 # Adjacent list conversion
 
@@ -291,27 +293,34 @@ def deleteEdge(adjacent_list=None, edge=None):
 
 # Displaying
 
-def graphDisplay(adjacent_list, filename="graphs_output"):
+
+def graphDisplay(adjacent_list, filename="graphs_output", weights=None):
     """Draw a graph in a circular layout and save it as a JPEG image.
 
-    The image is saved to ``<filename>.jpg`` in the current working directory
-    and is also displayed using Matplotlib.
+    If edge weights are provided, they are displayed as edge labels.
+
+    The image is saved to ``<filename>.jpg`` in the current working
+    directory and is also displayed using Matplotlib.
 
     Args:
         adjacent_list: An adjacency list whose node numbers start at 1.
         filename: Output filename without the ``.jpg`` extension.
+        weights: Optional dictionary mapping undirected edges to weights,
+            e.g. {(1, 2): 5, (1, 3): 8}.
 
     Returns:
         None.
     """
     graph = nx.Graph()
+
     for i in range(len(adjacent_list)):
         graph.add_node(i + 1)
-    for index, row in enumerate(adjacent_list):
-        for i in row:
-            graph.add_edge(i, index + 1)
 
-    _, ax = plt.subplots(figsize=(7,7))
+    for index, row in enumerate(adjacent_list):
+        for neighbor in row:
+            graph.add_edge(index + 1, neighbor)
+
+    _, ax = plt.subplots(figsize=(7, 7))
     pos = nx.circular_layout(graph)
 
     bg_circle = plt.Circle(
@@ -326,7 +335,6 @@ def graphDisplay(adjacent_list, filename="graphs_output"):
     )
     ax.add_patch(bg_circle)
 
-    #For yupiter implementation to see output
     nx.draw_networkx_nodes(
         graph, pos, node_color="skyblue", node_size=700, ax=ax
     )
@@ -337,12 +345,29 @@ def graphDisplay(adjacent_list, filename="graphs_output"):
         graph, pos, edge_color="gray", ax=ax
     )
 
+    # Display edge weights if provided.
+    if weights is not None:
+        edge_labels = {
+            (node1, node2): weight
+            for (node1, node2), weight in weights.items()
+        }
+
+        nx.draw_networkx_edge_labels(
+            graph,
+            pos,
+            edge_labels=edge_labels,
+            font_color="red",
+            font_size=10,
+            ax=ax
+        )
+
     ax.set_aspect("equal")
-    plt.axis("off")
+    ax.axis("off")
 
     plt.savefig(f"{filename}.jpg", bbox_inches="tight", dpi=300)
     plt.show()
     plt.close()
+
 
 
 # Graph generation
@@ -1051,7 +1076,375 @@ def graphDisplayHamiltonCycle(adjacent_list=None, hamilton_cycle=None, filename=
 
 ######################################################  Exercise 3 functionality #################################################
 
-# TODO
+def generateConnectedGraph(node_num=None, edge_num=None, random_chance_per_edge=None):
+    """Generate a connected undirected graph and return its adjacency list.
+
+    Choose exactly one generation mode: specify ``edge_num`` to generate
+    a graph with an exact number of edges, or ``random_chance_per_edge``
+    to independently sample each possible edge with the given probability.
+
+    The graph is repeatedly regenerated until it is connected.
+    Self-loops are not generated.
+
+    Args:
+        node_num: Number of nodes in the graph.
+        edge_num: Optional exact number of edges to generate.
+        random_chance_per_edge: Optional probability from 0 to 1 for each
+            possible edge to be included.
+
+    Returns:
+        An adjacency list representing a connected undirected graph,
+        with nodes and neighbors numbered from 1.
+
+    Raises:
+        ValueError: If the node count is omitted, both or neither generation
+            options are specified, or the number of edges is insufficient
+            to produce a connected graph.
+
+    Notes:
+        A connected undirected graph with ``node_num`` nodes requires at
+        least ``node_num - 1`` edges.
+
+        The function may take a long time to finish if the selected
+        generation parameters make connected graphs unlikely.
+    """
+    if node_num == None:
+        raise ValueError("Graph without node can't be created")
+    if (edge_num == None and random_chance_per_edge == None) or (edge_num != None and random_chance_per_edge != None):
+        raise ValueError("Chose one option edge_num (default) or random_chance_per_edge")
+    if edge_num != None and edge_num < node_num - 1:
+        raise ValueError("Edge number must be greater than or equal to node number - 1 for a connected graph.")
+    generated_graph = generateGraph(node_num=node_num, edge_num=edge_num, random_chance_per_edge=random_chance_per_edge)
+    components = graphComponents(generated_graph)
+    while(len(components) > 1):
+        generated_graph = generateGraph(node_num=node_num, edge_num=edge_num, random_chance_per_edge=random_chance_per_edge)
+        components = graphComponents(generated_graph)
+    return generated_graph
+
+def generateConnectedGraphRegularK(node_num=None, node_degree=None, randomization_cycles=None):
+    """Generate a connected k-regular undirected graph.
+
+    The graph is generated using ``generateGraphRegularK`` and repeatedly
+    regenerated until it is connected.
+
+    Args:
+        node_num: Number of nodes in the graph.
+        node_degree: Degree of every node in the graph. Each node must have
+            exactly this number of neighbors.
+        randomization_cycles: Optional number of randomization cycles used
+            when generating the regular graph.
+
+    Returns:
+        An adjacency list representing a connected k-regular undirected
+        graph, with nodes and neighbors numbered from 1.
+
+    Raises:
+        ValueError: If the node count or node degree is omitted, or if the
+            specified parameters cannot provide enough edges for a
+            connected graph.
+
+    Notes:
+        A k-regular graph with ``node_num`` nodes has
+        ``node_num * node_degree / 2`` edges.
+
+        A connected graph requires at least ``node_num - 1`` edges.
+        Therefore, a necessary condition for connectivity is::
+
+            node_degree * node_num >= 2 * (node_num - 1)
+
+        This condition is necessary but not sufficient to guarantee that
+        a connected k-regular graph can be generated.
+
+        The function may take a long time to finish if the generated
+        regular graphs are unlikely to be connected.
+    """
+    if node_num == None:
+        raise ValueError("Node number required!")
+    if node_degree == None:
+        raise ValueError("Node degree required!")
+    if node_degree * node_num < 2 * (node_num - 1):
+        raise ValueError("Node degree must be greater than or equal to 1 for a connected graph.")
+    generated_graph = generateGraphRegularK(node_num=node_num, node_degree=node_degree, randomization_cycles=randomization_cycles)
+    components = graphComponents(generated_graph)
+    while(len(components) > 1):
+        generated_graph = generateGraphRegularK(node_num=node_num, node_degree=node_degree, randomization_cycles=randomization_cycles)
+        components = graphComponents(generated_graph)
+    return generated_graph
+
+def generateEdgeWeights(adjacent_list=None, min_weight=1, max_weight=10):
+    """Generate random integer weights for all edges in an undirected graph.
+
+    Args:
+        adjacent_list: Adjacency list of the graph.
+        min_weight: Minimum possible edge weight, inclusive.
+        max_weight: Maximum possible edge weight, inclusive.
+
+    Returns:
+        A dictionary mapping each undirected edge to its weight.
+
+    Raises:
+        ValueError: If the adjacency list is missing or the weight range
+            is invalid.
+    """
+    if adjacent_list is None:
+        raise ValueError("Adjacency list required!")
+
+    if min_weight > max_weight:
+        raise ValueError("Minimum weight cannot exceed maximum weight.")
+
+    weights = {}
+
+    for node, neighbors in enumerate(adjacent_list, start=1):
+        for neighbor in neighbors:
+            edge = (min(node, neighbor), max(node, neighbor))
+
+            if edge not in weights:
+                weights[edge] = random.randint(min_weight, max_weight)
+
+    return weights
+
+def save_weights_to_file(weights=None, filename=None):
+    """Save undirected graph edge weights to a text file.
+
+    Args:
+        weights: Dictionary mapping undirected edges to their weights.
+        filename: Path to the output file.
+
+    Raises:
+        ValueError: If weights or filename are not provided.
+    """
+    if weights is None:
+        raise ValueError("Weights are required!")
+
+    if filename is None:
+        raise ValueError("Output filename required!")
+
+    with open(filename, "w", encoding="utf-8") as file:
+        for (node1, node2), weight in sorted(weights.items()):
+            file.write(f"{node1} {node2} {weight}\n")
+
+def load_weights_from_file(filename=None):
+    """Load undirected graph edge weights from a text file.
+
+    Each line must contain two node numbers and the edge weight,
+    separated by whitespace.
+
+    Args:
+        filename: Path to the input weights file.
+
+    Returns:
+        A dictionary mapping undirected edges to their weights.
+
+    Raises:
+        ValueError: If the filename is missing or the file contains
+            invalid weight data.
+    """
+    if filename is None:
+        raise ValueError("Input filename required!")
+
+    weights = {}
+
+    with open(filename, "r", encoding="utf-8") as file:
+        for line_number, line in enumerate(file, start=1):
+            if not line.strip():
+                continue
+
+            try:
+                node1, node2, weight = line.split()
+                node1 = int(node1)
+                node2 = int(node2)
+                weight = int(weight)
+
+                if node1 == node2:
+                    raise ValueError("Self-loops are not supported.")
+
+                edge = (min(node1, node2), max(node1, node2))
+
+                if edge in weights:
+                    raise ValueError("Duplicate edge.")
+
+                weights[edge] = weight
+
+            except ValueError as error:
+                raise ValueError(
+                    f"Invalid weight data in line {line_number}: {line.strip()}"
+                ) from error
+
+    return weights
+
+def dijkstra(adjacent_list, weights, start_node):
+    """Find shortest paths from a source node using Dijkstra's algorithm.
+
+    Args:
+        adjacent_list: Adjacency list of an undirected graph.
+        weights: Dictionary mapping edges to non-negative weights.
+        start_node: Starting vertex numbered from 1.
+
+    Returns:
+        Tuple (distances, paths) containing shortest distances and paths.
+    """
+    node_num = len(adjacent_list)
+
+    if not 1 <= start_node <= node_num:
+        raise ValueError("Invalid starting node!")
+
+    distances = {node: math.inf for node in range(1, node_num + 1)}
+    paths = {node: None for node in range(1, node_num + 1)}
+
+    distances[start_node] = 0
+    paths[start_node] = [start_node]
+    queue = [(0, start_node)]
+
+    while queue:
+        distance, node = heapq.heappop(queue)
+
+        if distance > distances[node]:
+            continue
+
+        for neighbor in adjacent_list[node - 1]:
+            edge = (min(node, neighbor), max(node, neighbor))
+            weight = weights[edge]
+
+            if weight < 0:
+                raise ValueError("Edge weights must be non-negative!")
+
+            new_distance = distance + weight
+
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                paths[neighbor] = paths[node] + [neighbor]
+                heapq.heappush(queue, (new_distance, neighbor))
+
+    return distances, paths
+
+def print_dijkstra_results(adjacent_list, weights, dijkstra_start):
+        distances, paths = dijkstra(
+            adjacent_list=adjacent_list,
+            weights=weights,
+            start_node=dijkstra_start
+        )
+
+        print(f"Shortest paths from vertex {dijkstra_start}:")
+
+        for node in range(1, len(adjacent_list) + 1):
+            if paths[node] is None:
+                print(f"To vertex {node}: unreachable")
+            else:
+                path = " -> ".join(map(str, paths[node]))
+                print(
+                    f"To vertex {node}: "
+                    f"path = {path}, distance = {distances[node]}"
+                )
+
+def dijkstra_matrix(adjacent_list=None, weights=None):
+        node_num = len(adjacent_list)
+        distance_matrix = []
+
+        for start in range(1, node_num + 1):
+            distances, _ = dijkstra(
+                adjacent_list=adjacent_list,
+                weights=weights,
+                start_node=start
+            )
+
+            distance_matrix.append([
+                distances[node] for node in range(1, node_num + 1)
+            ])
+        return distance_matrix
+
+def findCentralNode(adjacent_list=None, weights=None):  
+    distance_matrix = dijkstra_matrix(adjacent_list, weights)
+    sums = [sum(row) for row in distance_matrix]
+    central_node = sums.index(min(sums)) + 1
+    return central_node, sums[central_node - 1]    
+
+def findMinimaxNode(adjacent_list=None, weights=None):
+    distance_matrix = dijkstra_matrix(adjacent_list, weights)
+    max_distances = [max(row) for row in distance_matrix]
+    minimax_node = max_distances.index(min(max_distances)) + 1
+    return minimax_node, max_distances[minimax_node - 1]        
+
+
+def kruskalMST(adjacent_list=None, weights=None):
+    """Find a minimum spanning tree using Kruskal's algorithm.
+
+    Args:
+        adjacent_list: Adjacency list of an undirected graph.
+        weights: Dictionary mapping edges to their weights.
+
+    Returns:
+        Tuple (mst_edges, mst_weights, total_weight), where mst_edges
+        contains the selected edges and mst_weights their weights.
+
+    Raises:
+        ValueError: If arguments are missing or the graph is disconnected.
+    """
+    if adjacent_list is None:
+        raise ValueError("Adjacency list required!")
+    if weights is None:
+        raise ValueError("Weights dictionary required!")
+
+    node_num = len(adjacent_list)
+
+    edges = set()
+    for node, neighbors in enumerate(adjacent_list, start=1):
+        for neighbor in neighbors:
+            edge = (min(node, neighbor), max(node, neighbor))
+            edges.add(edge)
+
+    weighted_edges = []
+    for u, v in edges:
+        if (u, v) not in weights:
+            raise ValueError(f"Missing weight for edge {(u, v)}.")
+        weight = weights[(u, v)]
+        if weight < 0:
+            raise ValueError("Edge weights must be non-negative.")
+        weighted_edges.append((weight, u, v))
+
+    weighted_edges.sort()
+
+    parent = list(range(node_num + 1))
+    rank = [0] * (node_num + 1)
+
+    def find(node):
+        if parent[node] != node:
+            parent[node] = find(parent[node])
+        return parent[node]
+
+    def union(u, v):
+        root_u = find(u)
+        root_v = find(v)
+
+        if root_u == root_v:
+            return False
+
+        if rank[root_u] < rank[root_v]:
+            parent[root_u] = root_v
+        elif rank[root_u] > rank[root_v]:
+            parent[root_v] = root_u
+        else:
+            parent[root_v] = root_u
+            rank[root_u] += 1
+
+        return True
+
+    mst_edges = []
+    mst_weights = {}
+    total_weight = 0
+
+    for weight, u, v in weighted_edges:
+        if union(u, v):
+            mst_edges.append((u, v))
+            mst_weights[(u, v)] = weight
+            total_weight += weight
+
+            if len(mst_edges) == node_num - 1:
+                break
+
+    if len(mst_edges) != node_num - 1:
+        raise ValueError("Minimum spanning tree does not exist: graph is disconnected.")
+
+    return mst_edges, mst_weights, total_weight
 
 ########################################################### File operations ######################################################
 
