@@ -1318,6 +1318,17 @@ def dijkstra(adjacent_list, weights, start_node):
     return distances, paths
 
 def print_dijkstra_results(adjacent_list, weights, dijkstra_start):
+        """Print the shortest paths and distances from a starting vertex using Dijkstra's algorithm.
+        
+        Args:
+            adjacent_list: Adjacency list of an undirected graph.
+            weights: Dictionary mapping edges to their weights.
+            dijkstra_start: The starting vertex for the Dijkstra algorithm.
+            
+        Raises:
+            ValueError: If the starting vertex is invalid or if the graph is disconnected.
+        """
+
         distances, paths = dijkstra(
             adjacent_list=adjacent_list,
             weights=weights,
@@ -1337,6 +1348,16 @@ def print_dijkstra_results(adjacent_list, weights, dijkstra_start):
                 )
 
 def dijkstra_matrix(adjacent_list=None, weights=None):
+        """
+        Compute the distance matrix for an undirected graph using Dijkstra's algorithm.
+
+        Args:
+            adjacent_list: Adjacency list of an undirected graph.
+            weights: Dictionary mapping edges to their weights.
+
+        Returns:
+            A list of lists representing the distance matrix.
+        """
         node_num = len(adjacent_list)
         distance_matrix = []
 
@@ -1353,12 +1374,33 @@ def dijkstra_matrix(adjacent_list=None, weights=None):
         return distance_matrix
 
 def findCentralNode(adjacent_list=None, weights=None):  
+    """Find the central node in a graph, defined as the node with the smallest sum of shortest path distances to all other nodes.
+
+    Args:
+        adjacent_list: Adjacency list of an undirected graph.
+        weights: Dictionary mapping edges to their weights.
+
+    Returns:
+        Tuple (central_node, sum_of_distances), where central_node is the central node and sum_of_distances is the sum of its shortest path distances to all other nodes.
+
+    """
     distance_matrix = dijkstra_matrix(adjacent_list, weights)
     sums = [sum(row) for row in distance_matrix]
     central_node = sums.index(min(sums)) + 1
     return central_node, sums[central_node - 1]    
 
 def findMinimaxNode(adjacent_list=None, weights=None):
+    """Find the minimax node in a graph.
+
+    Args:
+        adjacent_list: Adjacency list of an undirected graph.
+        weights: Dictionary mapping edges to their weights.
+
+    Returns:
+        Tuple (minimax_node, max_distance), where minimax_node is the node
+        with the smallest maximum distance to any other node, and max_distance is that maximum distance.
+    
+    """
     distance_matrix = dijkstra_matrix(adjacent_list, weights)
     max_distances = [max(row) for row in distance_matrix]
     minimax_node = max_distances.index(min(max_distances)) + 1
