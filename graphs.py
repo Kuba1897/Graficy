@@ -13,7 +13,12 @@ display_types = [
     'graph',
     'components',
     'euler',
-    'hamilton'
+    'hamilton',
+    'dijkstra',
+    'dijkstra_all',
+    'center',
+    'minimax_center',
+    'mst'
 ]
 
 # Adjastable
@@ -47,6 +52,11 @@ parser.add_argument("-gen",
                     nargs=3,
                     metavar=("{np,nl,kregular}", "n", "{l,p,k}"),
                     help="Can be used when no --f specified to generate desired graph. Usage: '--gen [np,nl,kregular] n [l,p, k]'")
+parser.add_argument("-c",
+                    "--connected",
+                    action="store_true",
+                    help="Generate a connected graph")
+
 parser.add_argument("-genseq",
                     "--generateSequence",
                     nargs=1,
@@ -66,6 +76,21 @@ parser.add_argument("-i",
                     "--interactive",
                     action='store_true',
                     help="Enters interactive mode. If used only --f will be taken into account.")
+parser.add_argument("-genweights",
+                    "--generateWeights",
+                    action='store_true',
+                    help="If specified, weights will be generated for edges. Only usable if --output specified!")
+parser.add_argument("-weights",
+                    "--weights",
+                    nargs=1,
+                    metavar="weights.txt",
+                    help="File containing edge weights to display. Only usable with --display graph.")
+parser.add_argument("-dij",
+                    "--dijkstra",
+                    nargs=1,
+                    type=int,
+                    metavar="START_NODE",
+                    help="Find shortest paths from the specified starting vertex.")
 
 args = parser.parse_args()
 # print(args)
@@ -79,6 +104,11 @@ generator_euler = args.generateEuler
 randomize = args.randomize
 interactive_mode = args.interactive
 graph_type = args.graph
+connected = args.connected
+generate_weights = args.generateWeights
+weights_file = args.weights[0] if args.weights is not None else None
+display_weights = weights_file is not None
+dijkstra_start = args.dijkstra[0] if args.dijkstra is not None else None
 
 if interactive_mode == True:
     ig.run_interactive_program(input_file if input_file != None else None)
@@ -97,14 +127,14 @@ if graph_type == 'undirected':
     elif generator != None:
         node_num = int(generator[1])
         if generator[0] == 'np':
-            random_chance = float(generator[2])
-            adjacent_list = ugu.generateGraph(node_num=node_num, random_chance_per_edge=random_chance)
+                random_chance = float(generator[2])
+                adjacent_list = ugu.generateGraph(node_num=node_num, random_chance_per_edge=random_chance) if connected == False else ugu.generateConnectedGraph(node_num=node_num, random_chance_per_edge=random_chance)
         elif generator[0] == 'nl':
-            edge_num = int(generator[2])
-            adjacent_list = ugu.generateGraph(node_num=node_num, edge_num=edge_num)
+                edge_num = int(generator[2])
+                adjacent_list = ugu.generateGraph(node_num=node_num, edge_num=edge_num) if connected == False else ugu.generateConnectedGraph(node_num=node_num, edge_num=edge_num)
         elif generator[0] == 'kregular':
-            node_degree = int(generator[2])
-            adjacent_list = ugu.generateGraphRegularK(node_num=node_num, node_degree=node_degree, randomization_cycles=k_regular_randomization_cycles)
+                node_degree = int(generator[2])
+                adjacent_list = ugu.generateGraphRegularK(node_num=node_num, node_degree=node_degree, randomization_cycles=k_regular_randomization_cycles) if connected == False else ugu.generateConnectedGraphRegularK(node_num=node_num, node_degree=node_degree, randomization_cycles=k_regular_randomization_cycles)
     elif generator_sequence != None:
         node_num = int(generator_sequence[0])
         goodSequence = False
@@ -145,6 +175,20 @@ if graph_type == 'undirected':
     if randomize != None:
         adjacent_list = ugu.randomize_pair(adjacent_list=adjacent_list, randomize_cycles=int(randomize[0]))
 
+    weights = None
+
+    if generate_weights:
+        if output_file is None:
+            raise ValueError("Output filename required for weights generation!")
+        weights = ugu.generateEdgeWeights(
+            adjacent_list=adjacent_list,
+            min_weight=1,
+            max_weight=10
+        )
+        ugu.save_weights_to_file(weights, filename=output_file[0]+"_weights.txt")
+    elif weights_file is not None:
+        weights = ugu.load_weights_from_file(filename=weights_file)
+
     #Tyes from display_types
     match display_type:
         case 'adj_list':
@@ -165,9 +209,17 @@ if graph_type == 'undirected':
                 ugu.save_graph_to_file(incidents_matrix=incidents_matrix, filename=output_file[0])
 
         case 'graph':
-            if output_file == None:
+            if output_file is None:
                 raise ValueError("Output filename required for drawing!")
-            ugu.graphDisplay(adjacent_list=adjacent_list, filename=output_file[0])
+
+            if display_weights and weights is None:
+                    raise ValueError("Weights are required for displaying!")
+
+            ugu.graphDisplay(
+                adjacent_list=adjacent_list,
+                filename=output_file[0],
+                weights=weights if display_weights else None
+            )
 
         case 'components':
             components = ugu.graphComponents(adjacent_list=adjacent_list)
@@ -192,6 +244,82 @@ if graph_type == 'undirected':
                 print("Hamilton cycle not found!")
             if output_file != None and status == True:
                 ugu.graphDisplayHamiltonCycle(adjacent_list=adjacent_list, hamilton_cycle=cycle, filename=output_file[0])
+
+        case 'dijkstra':
+            if weights is None:
+                raise ValueError(
+                    "Edge weights are required. Use --weights or --generateWeights."
+                )
+
+            if dijkstra_start is None:
+                raise ValueError(
+                    "Starting vertex required. Use --dijkstra START_NODE."
+                )
+            ugu.print_dijkstra_results(
+                adjacent_list=adjacent_list,
+                weights=weights,
+                dijkstra_start=dijkstra_start
+                )
+        case 'dijkstra_all':
+            if weights is None:
+                raise ValueError(
+                    "Edge weights are required. Use --weights or --generateWeights."
+                )
+
+            distance_matrix = ugu.dijkstra_matrix(adjacent_list=adjacent_list, weights=weights)
+
+            print("Distance matrix:")
+            pretty_print(distance_matrix)
+            if output_file is not None:
+                ugu.save_graph_to_file(adjecent_matrix=distance_matrix, filename=output_file[0])
+
+        case 'center':
+            if adjacent_list is None:
+                raise ValueError("Adjacency list required!")
+            if weights is None:
+                raise ValueError("Weights dictionary required!")
+            central_node, min_sum = ugu.findCentralNode(adjacent_list=adjacent_list, weights=weights)
+            print(f"Central node: {central_node}, Distance sum: {min_sum}")
+
+        case 'minimax_center':
+            if adjacent_list is None:
+                raise ValueError("Adjacency list required!")
+            if weights is None:
+                raise ValueError("Weights dictionary required!")
+            minimax_center_node, min_max_distance = ugu.findMinimaxNode(adjacent_list=adjacent_list, weights=weights)
+            print(f"Minimax center node: {minimax_center_node}, Distance from furthest node: {min_max_distance}")
+
+        case 'mst':
+            if weights is None:
+                raise ValueError(
+                    "Edge weights are required. Use --weights or --generateWeights."
+                )
+
+            if output_file is None:
+                raise ValueError("Output filename required for drawing!")
+
+            mst_edges, mst_weights, total_weight = ugu.kruskalMST(
+                adjacent_list=adjacent_list,
+                weights=weights
+            )
+
+            print("Minimum spanning tree edges:")
+            for u, v in mst_edges:
+                print(f"{u} -- {v}: weight = {mst_weights[(u, v)]}")
+
+            print(f"Total weight: {total_weight}")
+
+            mst_adjacent_list = [[] for _ in adjacent_list]
+
+            for u, v in mst_edges:
+                mst_adjacent_list[u - 1].append(v)
+                mst_adjacent_list[v - 1].append(u)
+
+            ugu.graphDisplay(
+                adjacent_list=mst_adjacent_list,
+                filename=output_file[0],
+                weights=mst_weights
+            )
 
         case _:
             print("Unsupported format for undirected")
