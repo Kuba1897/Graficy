@@ -44,17 +44,16 @@ def generate_graph(node_num, probability):
 
 
 def generate_strongly_connected_graph(node_num, probability):
-    """Generate G(n,p) while guaranteeing strong connectivity."""
+    """Generate G(n,p) repeatedly until it is strongly connected."""
     if node_num == 1:
         return [[]]
-    graph = [[] for _ in range(node_num)]
-    for node in range(1, node_num + 1):
-        graph[node - 1].append(node % node_num + 1)
-        for target in range(1, node_num + 1):
-            if target != node and target not in graph[node - 1] and random.random() < probability:
-                graph[node - 1].append(target)
-        graph[node - 1].sort()
-    return graph
+    if probability <= 0:
+        raise ValueError("A strongly connected graph with more than one vertex requires probability > 0")
+
+    while True:
+        graph = generate_graph(node_num, probability)
+        if len(kosaraju(graph)) == 1:
+            return graph
 
 
 def transpose_graph(graph):

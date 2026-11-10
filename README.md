@@ -270,6 +270,12 @@ uporządkowanej krawędzi z zakresu `0..1`:
 python graphs.py -gh directed -dp adj_list -gen np 8 0.3
 ```
 
+Funkcja `generate_strongly_connected_graph(N, P)` generuje zwykłe grafy
+`G(N,P)` wielokrotnie i po każdym losowaniu uruchamia Kosaraju. Zwraca pierwszy
+graf, dla którego Kosaraju znajdzie jedną silnie spójną składową. Dla `N > 1`
+wartość `P = 0` jest niedozwolona, ponieważ taki graf nie może być silnie
+spójny.
+
 ### Silnie spójne składowe — `-dp scc`
 
 Uruchamia algorytm Kosaraju:
