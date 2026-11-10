@@ -82,13 +82,32 @@ skierowanego `1 2 4` i `2 1 -3` są dwiema różnymi krawędziami.
 
 ### `-genweights`
 
-Generuje wagi `1..10` dla grafu nieskierowanego. Wymaga `-out PREFIX` i zapisuje
-plik `PREFIX_weights.txt`:
+Generuje wagi `1..10` dla grafu nieskierowanego. Opcja `-out PREFIX` jest
+opcjonalna. Bez niej wagi są używane tylko w bieżącym uruchomieniu programu:
 
 ```powershell
 python graphs.py -gh undirected -dp dijkstra `
   -f adj_list test_input\adjacent_list.txt -genweights -out graph
 ```
+
+Jeżeli podasz `-out graph`, wagi zostaną dodatkowo zapisane do
+`graph_weights.txt`. Dla grafu skierowanego działanie jest takie samo, ale
+wagi są losowane z zakresu `-5..10`:
+
+```powershell
+python graphs.py -gh directed -dp bellman_ford -dij 1 `
+  -f adj_list test_input\directed_graph.txt -genweights
+```
+
+Zapis wag skierowanych do pliku:
+
+```powershell
+python graphs.py -gh directed -dp johnson `
+  -f adj_list test_input\directed_graph.txt `
+  -genweights -out directed_graph
+```
+
+Utworzy plik `directed_graph_weights.txt`.
 
 ## Grafy nieskierowane
 

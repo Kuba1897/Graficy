@@ -180,14 +180,13 @@ if graph_type == 'undirected':
     weights = None
 
     if generate_weights:
-        if output_file is None:
-            raise ValueError("Output filename required for weights generation!")
         weights = ugu.generateEdgeWeights(
             adjacent_list=adjacent_list,
             min_weight=1,
             max_weight=10
         )
-        ugu.save_weights_to_file(weights, filename=output_file[0]+"_weights.txt")
+        if output_file is not None:
+            ugu.save_weights_to_file(weights, filename=output_file[0]+"_weights.txt")
     elif weights_file is not None:
         weights = ugu.load_weights_from_file(filename=weights_file)
 
@@ -337,6 +336,16 @@ elif graph_type == 'directed':
     else:
         raise ValueError("Directed graphs require --f or --gen np n p")
 
+    directed_weights = None
+    if generate_weights:
+        directed_weights = dgu.generate_weights(
+            directed_graph,
+            minimum=-5,
+            maximum=10
+        )
+        if output_file is not None:
+            dgu.save_weights(directed_weights, output_file[0] + "_weights.txt")
+
     if display_type == 'adj_list':
         for node, neighbours in enumerate(directed_graph, start=1):
             print(f"{node}: {neighbours}")
@@ -348,9 +357,10 @@ elif graph_type == 'directed':
         for number, component in enumerate(components, start=1):
             print(f"{number}) {component}")
     else:
-        if weights_file is None:
+        if weights_file is not None:
+            directed_weights = dgu.read_weights(weights_file)
+        if directed_weights is None:
             raise ValueError("Directed weighted algorithms require --weights FILE")
-        directed_weights = dgu.read_weights(weights_file)
         if display_type == 'bellman_ford':
             if dijkstra_start is None:
                 raise ValueError("Starting vertex required: use --dijkstra START_NODE")

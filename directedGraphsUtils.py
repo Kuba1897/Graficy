@@ -118,6 +118,12 @@ def generate_weights(graph, minimum=-5, maximum=10):
             for target in neighbours}
 
 
+def save_weights(weights, filename):
+    with open(filename, "w", encoding="utf-8") as file:
+        for (source, target), weight in sorted(weights.items()):
+            file.write(f"{source} {target} {weight}\n")
+
+
 def bellman_ford(graph, weights, start):
     distances = {node: float("inf") for node in range(1, len(graph) + 1)}
     predecessors = {node: None for node in distances}
