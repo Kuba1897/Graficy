@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser(prog="Graphs",
                                  epilog="Made by Kuba, Radosław C, Radosław I and Paweł")
 parser.add_argument("-gh",
                     "--graph",
-                    choices=['undirected', 'directed'],
+                    choices=['undirected'],
                     help="Type of graph to process")
 parser.add_argument("-dp",
                     "--display",
@@ -178,14 +178,13 @@ if graph_type == 'undirected':
     weights = None
 
     if generate_weights:
-        if output_file is None:
-            raise ValueError("Output filename required for weights generation!")
         weights = ugu.generateEdgeWeights(
             adjacent_list=adjacent_list,
             min_weight=1,
             max_weight=10
         )
-        ugu.save_weights_to_file(weights, filename=output_file[0]+"_weights.txt")
+        if output_file is not None:
+            ugu.save_weights_to_file(weights, filename=output_file[0]+"_weights.txt")
     elif weights_file is not None:
         weights = ugu.load_weights_from_file(filename=weights_file)
 
@@ -324,8 +323,5 @@ if graph_type == 'undirected':
         case _:
             print("Unsupported format for undirected")
 
-elif graph_type == 'directed':
-    # TODO
-    print("Directed utils here")
 else:
     print("Unsupported graph type!")
