@@ -1,7 +1,8 @@
 # Graficy — grafy i ich zastosowania
 
-Program uruchamia się z wiersza poleceń przez `graphs.py`. Obsługuje grafy
-nieskierowane oraz grafy skierowane. Wierzchołki są numerowane od `1`.
+Program uruchamia się z wiersza poleceń przez `graphs.py` dla grafów
+nieskierowanych oraz przez `excercise4.py` dla grafów skierowanych. Wierzchołki
+są numerowane od `1`.
 
 ## Instalacja
 
@@ -18,10 +19,13 @@ python graphs.py -h
 ## Składnia ogólna i wspólne opcje
 
 ```text
-python graphs.py -gh {undirected,directed} -dp OPERACJA [pozostałe opcje]
+python graphs.py -gh undirected -dp OPERACJA [pozostałe opcje]
+python excercise4.py -dp OPERACJA [pozostałe opcje]
 ```
 
-`-gh` / `--graph` wybiera typ grafu: `undirected` albo `directed`.
+`-gh` / `--graph` w programie `graphs.py` wybiera graf nieskierowany. Obsługa
+grafów skierowanych znajduje się osobno w `excercise4.py`, więc ten argument
+nie jest tam potrzebny.
 
 `-dp` / `--display` wybiera operację. Dostępne operacje zależą od typu grafu
 i są opisane niżej.
@@ -95,14 +99,14 @@ Jeżeli podasz `-out graph`, wagi zostaną dodatkowo zapisane do
 wagi są losowane z zakresu `-5..10`:
 
 ```powershell
-python graphs.py -gh directed -dp bellman_ford -dij 1 `
+python excercise4.py -dp bellman_ford -dij 1 `
   -f adj_list test_input\directed_graph.txt -genweights
 ```
 
 Zapis wag skierowanych do pliku:
 
 ```powershell
-python graphs.py -gh directed -dp johnson `
+python excercise4.py -dp johnson `
   -f adj_list test_input\directed_graph.txt `
   -genweights -out directed_graph
 ```
@@ -276,7 +280,7 @@ Dla grafów skierowanych dostępne są: `adj_list`, `scc`, `bellman_ford` i
 ### Lista sąsiedztwa — `-dp adj_list`
 
 ```powershell
-python graphs.py -gh directed -dp adj_list `
+python excercise4.py -dp adj_list `
   -f adj_list test_input\directed_graph.txt
 ```
 
@@ -286,7 +290,7 @@ python graphs.py -gh directed -dp adj_list `
 uporządkowanej krawędzi z zakresu `0..1`:
 
 ```powershell
-python graphs.py -gh directed -dp adj_list -gen np 8 0.3
+python excercise4.py -dp adj_list -gen np 8 0.3
 ```
 
 Funkcja `generate_strongly_connected_graph(N, P)` generuje zwykłe grafy
@@ -300,7 +304,7 @@ spójny.
 Uruchamia algorytm Kosaraju:
 
 ```powershell
-python graphs.py -gh directed -dp scc `
+python excercise4.py -dp scc `
   -f adj_list test_input\directed_graph.txt
 ```
 
@@ -310,7 +314,7 @@ Oblicza najkrótsze ścieżki od `START`, obsługuje wagi ujemne i zgłasza bł�
 przy osiągalnym ujemnym cyklu:
 
 ```powershell
-python graphs.py -gh directed -dp bellman_ford -dij 1 `
+python excercise4.py -dp bellman_ford -dij 1 `
   -f adj_list test_input\directed_graph.txt `
   -weights test_input\directed_weights.txt
 ```
@@ -320,7 +324,7 @@ python graphs.py -gh directed -dp bellman_ford -dij 1 `
 Oblicza odległości pomiędzy wszystkimi parami wierzchołków:
 
 ```powershell
-python graphs.py -gh directed -dp johnson `
+python excercise4.py -dp johnson `
   -f adj_list test_input\directed_graph.txt `
   -weights test_input\directed_weights.txt
 ```

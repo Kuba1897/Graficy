@@ -4,7 +4,6 @@
 import argparse
 import random
 import undirectedGraphsUtils as ugu
-import directedGraphsUtils as dgu
 import interactive_graphs as ig
 
 display_types = [
@@ -20,7 +19,6 @@ display_types = [
     'center',
     'minimax_center',
     'mst'
-    , 'scc', 'bellman_ford', 'johnson'
 ]
 
 # Adjastable
@@ -33,7 +31,7 @@ parser = argparse.ArgumentParser(prog="Graphs",
                                  epilog="Made by Kuba, Radosław C, Radosław I and Paweł")
 parser.add_argument("-gh",
                     "--graph",
-                    choices=['undirected', 'directed'],
+                    choices=['undirected'],
                     help="Type of graph to process")
 parser.add_argument("-dp",
                     "--display",
@@ -325,50 +323,5 @@ if graph_type == 'undirected':
         case _:
             print("Unsupported format for undirected")
 
-elif graph_type == 'directed':
-    if display_type not in {'adj_list', 'scc', 'bellman_ford', 'johnson'}:
-        raise ValueError("For directed graphs use: adj_list, scc, bellman_ford or johnson")
-
-    if input_file is not None:
-        directed_graph = dgu.load_graph_from_file(input_file[1], input_file[0])
-    elif generator is not None and generator[0] == 'np':
-        directed_graph = dgu.generate_graph(int(generator[1]), float(generator[2]))
-    else:
-        raise ValueError("Directed graphs require --f or --gen np n p")
-
-    directed_weights = None
-    if generate_weights:
-        directed_weights = dgu.generate_weights(
-            directed_graph,
-            minimum=-5,
-            maximum=10
-        )
-        if output_file is not None:
-            dgu.save_weights(directed_weights, output_file[0] + "_weights.txt")
-
-    if display_type == 'adj_list':
-        for node, neighbours in enumerate(directed_graph, start=1):
-            print(f"{node}: {neighbours}")
-        if output_file is not None:
-            dgu.save_graph_to_file(directed_graph, output_file[0])
-    elif display_type == 'scc':
-        components = dgu.kosaraju(directed_graph)
-        print("Strongly connected components:")
-        for number, component in enumerate(components, start=1):
-            print(f"{number}) {component}")
-    else:
-        if weights_file is not None:
-            directed_weights = dgu.read_weights(weights_file)
-        if directed_weights is None:
-            raise ValueError("Directed weighted algorithms require --weights FILE")
-        if display_type == 'bellman_ford':
-            if dijkstra_start is None:
-                raise ValueError("Starting vertex required: use --dijkstra START_NODE")
-            distances, _ = dgu.bellman_ford(directed_graph, directed_weights, dijkstra_start)
-            print(distances)
-        else:
-            print("Distance matrix:")
-            for source, distances in dgu.johnson(directed_graph, directed_weights).items():
-                print(f"{source}: {distances}")
 else:
     print("Unsupported graph type!")
