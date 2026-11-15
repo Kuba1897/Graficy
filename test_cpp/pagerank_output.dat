@@ -1,0 +1,27 @@
+Bladzenie przypadkowe (N = 1000000):
+I ==> PageRank = 0.150637
+H ==> PageRank = 0.139813
+E ==> PageRank = 0.120486
+D ==> PageRank = 0.101824
+G ==> PageRank = 0.098715
+F ==> PageRank = 0.072255
+C ==> PageRank = 0.072183
+B ==> PageRank = 0.058459
+L ==> PageRank = 0.057725
+A ==> PageRank = 0.053983
+J ==> PageRank = 0.044226
+K ==> PageRank = 0.029694
+
+Iteracja wektora obsadzen (metoda potegowa):
+I ==> PageRank = 0.150941
+H ==> PageRank = 0.139879
+E ==> PageRank = 0.120326
+D ==> PageRank = 0.102309
+G ==> PageRank = 0.098443
+F ==> PageRank = 0.072116
+C ==> PageRank = 0.072024
+B ==> PageRank = 0.058454
+L ==> PageRank = 0.057529
+A ==> PageRank = 0.053512
+J ==> PageRank = 0.044575
+K ==> PageRank = 0.029892
